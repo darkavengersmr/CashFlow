@@ -1,4 +1,3 @@
-from typing import List
 from datetime import datetime, timedelta
 
 from database import database, engine, metadata
@@ -22,7 +21,46 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 metadata.create_all(bind=engine)
 
-app = FastAPI()
+tags_metadata = [
+    {
+        "name": "register",
+        "description": "Регистрация новых пользователей",
+    },
+    {
+        "name": "token",
+        "description": "Обновление токенов доступа",
+    },
+    {
+        "name": "user",
+        "description": "Получение данных из профиля пользователя",
+    },
+    {
+        "name": "inflow",
+        "description": "Доходы",
+    },
+    {
+        "name": "outflow",
+        "description": "Расходы",
+    },
+    {
+        "name": "outflow regular",
+        "description": "Регулярные расходы",
+    },
+    {
+        "name": "assets",
+        "description": "Активы",
+    },
+    {
+        "name": "liabilities",
+        "description": "Пассивы",
+    },
+]
+
+app = FastAPI(
+    title="Cashflow Api",
+    version="1.0.0",
+    openapi_tags=tags_metadata,
+)
 
 
 @app.on_event("startup")
@@ -105,7 +143,7 @@ async def is_user(user_id: int, current_user):
     return db_user
 
 
-@app.post("/register", response_model=schemas.User)
+@app.post("/register", response_model=schemas.User, tags=["register"])
 async def create_user(user: schemas.UserCreate):
     db_user = await crud.get_user_by_email(email=user.email)
     hashed_password: str = get_password_hash(user.password)
@@ -114,7 +152,7 @@ async def create_user(user: schemas.UserCreate):
     return await crud.create_user(user=user, hashed_password=hashed_password)
 
 
-@app.post("/token", response_model=schemas.Token)
+@app.post("/token", response_model=schemas.Token , tags=["token"])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -130,62 +168,129 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/user", response_model=schemas.User)
+@app.get("/user", response_model=schemas.User, tags=["user"])
 async def read_user(current_user: schemas.User = Depends(get_current_active_user)):
     return await is_user(current_user.id, current_user)
 
 
-@app.get("/users/{user_id}/inflow/", response_model=schemas.InflowUser)
+@app.get("/users/{user_id}/inflow/", response_model=schemas.InflowUser, tags=["inflow"])
 async def get_inflow_for_user(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.get_inflow_user(user_id=user_id)
 
 
-@app.post("/users/{user_id}/inflow/", response_model=schemas.InflowInDB)
-async def create_inflow_for_user(user_id: int, inflow: schemas.InflowCreate, current_user: schemas.User = Depends(get_current_active_user)):
+@app.post("/users/{user_id}/inflow/", response_model=schemas.InflowInDB, tags=["inflow"])
+async def create_inflow_for_user(user_id: int, inflow: schemas.InflowCreate,
+                                 current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.create_user_inflow(inflow=inflow, user_id=user_id)
 
 
-@app.delete("/users/{user_id}/inflow/")
-async def delete_inflow_for_user(user_id: int, inflow_id: int, current_user: schemas.User = Depends(get_current_active_user)):
+@app.delete("/users/{user_id}/inflow/", tags=["inflow"])
+async def delete_inflow_for_user(user_id: int, inflow_id: int,
+                                 current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.delete_inflow_user(inflow_id=inflow_id, user_id=user_id)
 
 
-@app.get("/users/{user_id}/outflow/", response_model=schemas.OutflowUser)
+@app.get("/users/{user_id}/outflow/", response_model=schemas.OutflowUser, tags=["outflow"])
 async def get_outflow_for_user(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.get_outflow_user(user_id=user_id)
 
 
-@app.post("/users/{user_id}/outflow/", response_model=schemas.OutflowInDB)
-async def create_outflow_for_user(user_id: int, outflow: schemas.OutflowCreate, current_user: schemas.User = Depends(get_current_active_user)):
+@app.post("/users/{user_id}/outflow/", response_model=schemas.OutflowInDB, tags=["outflow"])
+async def create_outflow_for_user(user_id: int, outflow: schemas.OutflowCreate,
+                                  current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.create_user_outflow(outflow=outflow, user_id=user_id)
 
 
-@app.delete("/users/{user_id}/outflow/")
-async def delete_outflow_for_user(user_id: int, outflow_id: int, current_user: schemas.User = Depends(get_current_active_user)):
+@app.delete("/users/{user_id}/outflow/", tags=["outflow"])
+async def delete_outflow_for_user(user_id: int, outflow_id: int,
+                                  current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.delete_outflow_user(outflow_id=outflow_id, user_id=user_id)
 
 
-@app.get("/users/{user_id}/outflow_regular/", response_model=schemas.OutflowRegularUser)
+@app.get("/users/{user_id}/outflow_regular/", response_model=schemas.OutflowRegularUser, tags=["outflow regular"])
 async def get_outflow_regular_for_user(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.get_outflow_regular_user(user_id=user_id)
 
 
-@app.post("/users/{user_id}/outflow_regular/", response_model=schemas.OutflowRegularInDB)
+@app.post("/users/{user_id}/outflow_regular/", response_model=schemas.OutflowRegularInDB, tags=["outflow regular"])
 async def create_outflow_regular_for_user(user_id: int, outflow_regular: schemas.OutflowRegularCreate,
                                   current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.create_user_outflow_regular(outflow_regular=outflow_regular, user_id=user_id)
 
 
-@app.delete("/users/{user_id}/outflow_regular/")
+@app.put("/users/{user_id}/outflow_regular/", tags=["outflow regular"])
+async def create_outflow_regular_for_user(user_id: int, outflow_regular: schemas.OutflowRegularOut,
+                                          current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.update_user_outflow_regular(outflow_regular=outflow_regular, user_id=user_id)
+
+
+@app.delete("/users/{user_id}/outflow_regular/", tags=["outflow regular"])
 async def delete_outflow_regular_for_user(user_id: int, outflow_regular_id: int,
                                           current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
     return await crud.delete_outflow_regular_user(outflow_regular_id=outflow_regular_id, user_id=user_id)
+
+
+@app.post("/users/{user_id}/assets/", response_model=schemas.AssetInDB, tags=["assets"])
+async def create_asset_for_user(user_id: int, asset: schemas.AssetCreate,
+                                current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.create_user_asset(asset=asset, user_id=user_id)
+
+
+@app.get("/users/{user_id}/assets/", response_model=schemas.AssetUser, tags=["assets"])
+async def get_assets_for_user(user_id: int, date: datetime = datetime.now(),
+                              current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.get_assets_user(user_id=user_id, date=date)
+
+
+@app.put("/users/{user_id}/assets/", tags=["assets"])
+async def update_asset_for_user(user_id: int, asset: schemas.AssetOut,
+                                current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.update_user_asset(asset=asset, user_id=user_id)
+
+
+@app.delete("/users/{user_id}/assets/", tags=["assets"])
+async def delete_asset_for_user(user_id: int, asset: schemas.AssetDelete,
+                                current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.update_user_asset(asset=asset, user_id=user_id)
+
+
+@app.post("/users/{user_id}/liabilities/", response_model=schemas.LiabilitieInDB, tags=["liabilities"])
+async def create_liabilitie_for_user(user_id: int, liabilitie: schemas.LiabilitieCreate,
+                                     current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.create_user_liabilitie(liabilitie=liabilitie, user_id=user_id)
+
+
+@app.get("/users/{user_id}/liabilities/", response_model=schemas.LiabilitieUser, tags=["liabilities"])
+async def get_liabilities_for_user(user_id: int, date: datetime = datetime.now(),
+                                   current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.get_liabilities_user(user_id=user_id, date=date)
+
+
+@app.put("/users/{user_id}/liabilities/", tags=["liabilities"])
+async def update_liabilitie_for_user(user_id: int, liabilitie: schemas.LiabilitieOut,
+                                     current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.update_user_liabilitie(liabilitie=liabilitie, user_id=user_id)
+
+
+@app.delete("/users/{user_id}/liabilities/", tags=["liabilities"])
+async def delete_liabilitie_for_user(user_id: int, liabilitie: schemas.LiabilitieDelete,
+                                     current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user)
+    return await crud.update_user_liabilitie(liabilitie=liabilitie, user_id=user_id)

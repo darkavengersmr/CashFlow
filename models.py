@@ -43,13 +43,13 @@ outflows_regular = Table(
     Column("owner_id", Integer, ForeignKey("users.id"))
 )
 
-'''
+
 assets = Table(
     "assets",
     metadata,
     Column("id", Integer, unique=True, primary_key=True, autoincrement=True),
-    Column("date_in", DateTime, nullable=False, default=datetime.datetime.utcnow),
-    Column("date_out", DateTime, nullable=False, default=datetime.datetime.utcnow),
+    Column("date_in", DateTime, nullable=False),
+    Column("date_out", DateTime, nullable=False),
     Column("description", String, nullable=False, default='unknown'),
     Column("sum", Integer, nullable=False, default=0),
     Column("owner_id", Integer, ForeignKey("users.id"))
@@ -60,11 +60,9 @@ liabilities = Table(
     "liabilities",
     metadata,
     Column("id", Integer, unique=True, primary_key=True, autoincrement=True),
-    Column("date_in", DateTime, nullable=False, default=datetime.datetime.utcnoww),
-    Column("date_out", DateTime, nullable=False, default=datetime.datetime.utcnow),
+    Column("date_in", DateTime, nullable=False),
+    Column("date_out", DateTime, nullable=False),
     Column("description", String, nullable=False, default='unknown'),
     Column("sum", Integer, nullable=False, default=0),
     Column("owner_id", Integer, ForeignKey("users.id"))
 )
-
-'''

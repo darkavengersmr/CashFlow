@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from pydantic import BaseModel, BaseSettings
 
@@ -46,7 +46,6 @@ class User(UserBase):
         orm_mode = True
 
 
-
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -54,7 +53,6 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
-
 
 
 class InflowBase(BaseModel):
@@ -83,7 +81,6 @@ class InflowUser(BaseModel):
         orm_mode = True
 
 
-
 class OutflowBase(BaseModel):
     date: datetime = datetime.now()
     description: str = 'Прочие расходы'
@@ -110,7 +107,6 @@ class OutflowUser(BaseModel):
         orm_mode = True
 
 
-
 class OutflowRegularBase(BaseModel):
     description: str = 'Ежемесячные расходы'
     sum: int = 0
@@ -129,8 +125,101 @@ class OutflowRegularInDB(OutflowRegularBase):
         orm_mode = True
 
 
+class OutflowRegularOut(BaseModel):
+    id: int
+    description: str
+    sum: int
+
+
 class OutflowRegularUser(BaseModel):
     outflow_regular: List[OutflowRegularInDB] = []
+
+    class Config:
+        orm_mode = True
+
+
+class AssetBase(BaseModel):
+    date_in: datetime = datetime.now()
+    date_out: datetime = datetime.now() + timedelta(days=100000)
+    description: str = 'Прочие активы'
+    sum: int = 0
+
+
+class AssetCreate(AssetBase):
+    class Config:
+        orm_mode = True
+
+
+class AssetInDB(AssetBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class AssetOut(BaseModel):
+    id: int
+    description: str
+    sum: int
+
+    class Config:
+        orm_mode = True
+
+
+class AssetDelete(BaseModel):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class AssetUser(BaseModel):
+    assets: List[AssetOut] = []
+
+    class Config:
+        orm_mode = True
+
+
+
+class LiabilitieBase(BaseModel):
+    date_in: datetime = datetime.now()
+    date_out: datetime = datetime.now() + timedelta(days=100000)
+    description: str = 'Прочие пассивы'
+    sum: int = 0
+
+
+class LiabilitieCreate(LiabilitieBase):
+    class Config:
+        orm_mode = True
+
+
+class LiabilitieInDB(LiabilitieBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class LiabilitieOut(BaseModel):
+    id: int
+    description: str
+    sum: int
+
+    class Config:
+        orm_mode = True
+
+
+class LiabilitieDelete(BaseModel):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class LiabilitieUser(BaseModel):
+    liabilities: List[LiabilitieOut] = []
 
     class Config:
         orm_mode = True
