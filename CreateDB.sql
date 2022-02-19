@@ -1,15 +1,14 @@
-CREATE DATABASE PayAttentionTickers;
+CREATE DATABASE cashflow;
 
 DROP TABLE public.users;
 CREATE TABLE public.users
 (
-	user_id varchar(32) NOT NULL,
-	alarm boolean NOT NULL,
-	alarm_limit integer DEFAULT 0,
-	user_pwd text,
-	token text,
-	token_exp timestamp without time zone,
-	CONSTRAINT pk_user_id PRIMARY KEY (user_id)
+	id serial NOT NULL,
+	username text NOT NULL,
+	email text  NOT NULL,
+	hashed_password text,
+	is_active boolean NOT NULL,
+	CONSTRAINT pk_users_id PRIMARY KEY (id)
 )
 
 WITH (
@@ -19,55 +18,98 @@ WITH (
 ALTER TABLE IF EXISTS public.users
     OWNER to pi;
 
-DROP TABLE public.tickers;
-CREATE TABLE public.tickers
+DROP TABLE public.inflow;
+CREATE TABLE public.inflow
 (
-	key_id serial NOT NULL,
-	user_id varchar(32) REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
-	ticker_id varchar(16) NOT NULL,
-	ticker_desc text,
-	deviat_month real,
-	deviat_week real,
-	update_date timestamp without time zone,
-	CONSTRAINT pk_key_id PRIMARY KEY (key_id)
+	id serial NOT NULL,
+	date timestamp without time zone,
+	description text NOT NULL,
+	sum integer,
+	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+	CONSTRAINT pk_inflow_id PRIMARY KEY (id)
 )
 
 WITH (
     OIDS = FALSE
 );
 
-ALTER TABLE IF EXISTS public.tickers
+ALTER TABLE IF EXISTS public.inflow
     OWNER to pi;
 
-DROP TABLE public.logs;
-CREATE TABLE public.logs
+
+DROP TABLE public.outflow;
+CREATE TABLE public.outflow
 (
-	log_id serial NOT NULL,
-	date timestamp without time zone NOT NULL,
-	user_id varchar(32) REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
-	message text,
-	CONSTRAINT pk_log_id PRIMARY KEY (log_id)
+	id serial NOT NULL,
+	date timestamp without time zone,
+	description text NOT NULL,
+	sum integer,
+	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+	CONSTRAINT pk_outflow_id PRIMARY KEY (id)
 )
 
 WITH (
     OIDS = FALSE
 );
 
-ALTER TABLE IF EXISTS public.logs
+ALTER TABLE IF EXISTS public.outflow
     OWNER to pi;
 
 
-DROP TABLE public.stock_exchange;
-CREATE TABLE public.stock_exchange
+DROP TABLE public.outflow_regular;
+CREATE TABLE public.outflow_regular
 (
-    ticker_id character varying(16) NOT NULL,
-    ticker_desc text,
-    PRIMARY KEY (ticket_id)
+	id serial NOT NULL,
+	description text NOT NULL,
+	sum integer,
+	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+	CONSTRAINT pk_outflow_regular_id PRIMARY KEY (id)
 )
 
 WITH (
     OIDS = FALSE
 );
 
-ALTER TABLE IF EXISTS public.stock_exchange
+ALTER TABLE IF EXISTS public.outflow_regular
     OWNER to pi;
+
+
+DROP TABLE public.assets;
+CREATE TABLE public.assets
+(
+	id serial NOT NULL,
+	date_in timestamp without time zone,
+	date_out timestamp without time zone,
+	description text NOT NULL,
+	sum integer,
+	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+	CONSTRAINT pk_assets_id PRIMARY KEY (id)
+)
+
+WITH (
+    OIDS = FALSE
+);
+
+ALTER TABLE IF EXISTS public.assets
+    OWNER to pi;
+
+
+DROP TABLE public.liabilities;
+CREATE TABLE public.liabilities
+(
+	id serial NOT NULL,
+	date_in timestamp without time zone,
+	date_out timestamp without time zone,
+	description text NOT NULL,
+	sum integer,
+	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+	CONSTRAINT pk_liabilities_id PRIMARY KEY (id)
+)
+
+WITH (
+    OIDS = FALSE
+);
+
+ALTER TABLE IF EXISTS public.liabilities
+    OWNER to pi;
+ 
