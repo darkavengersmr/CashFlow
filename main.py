@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import calendar
 
 from database import database, engine, metadata
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -143,6 +144,18 @@ async def is_user(user_id: int, current_user):
     return db_user
 
 
+def month_begin():
+    dt = datetime.now()
+    return datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-01 00:00:00", "%Y-%m-%d %H:%M:%S")
+
+
+def month_end():
+    dt = datetime.now()
+    _, num_days = calendar.monthrange(dt.timetuple().tm_year, dt.timetuple().tm_mon)
+    return datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-{num_days} 23:59:59",
+                             "%Y-%m-%d %H:%M:%S")
+
+
 @app.post("/register", response_model=schemas.User, tags=["register"])
 async def create_user(user: schemas.UserCreate):
     db_user = await crud.get_user_by_email(email=user.email)
@@ -174,9 +187,10 @@ async def read_user(current_user: schemas.User = Depends(get_current_active_user
 
 
 @app.get("/users/{user_id}/inflow/", response_model=schemas.InflowUser, tags=["inflow"])
-async def get_inflow_for_user(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
+async def get_inflow_for_user(user_id: int, date_in: datetime = month_begin(), date_out: datetime = month_end(),
+                              current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
-    return await crud.get_inflow_user(user_id=user_id)
+    return await crud.get_inflow_user(user_id=user_id, date_in=date_in, date_out=date_out)
 
 
 @app.post("/users/{user_id}/inflow/", response_model=schemas.InflowInDB, tags=["inflow"])
@@ -194,9 +208,10 @@ async def delete_inflow_for_user(user_id: int, inflow_id: int,
 
 
 @app.get("/users/{user_id}/outflow/", response_model=schemas.OutflowUser, tags=["outflow"])
-async def get_outflow_for_user(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
+async def get_outflow_for_user(user_id: int, date_in: datetime = month_begin(), date_out: datetime = month_end(),
+                               current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user)
-    return await crud.get_outflow_user(user_id=user_id)
+    return await crud.get_outflow_user(user_id=user_id, date_in=date_in, date_out=date_out)
 
 
 @app.post("/users/{user_id}/outflow/", response_model=schemas.OutflowInDB, tags=["outflow"])

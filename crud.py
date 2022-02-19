@@ -39,9 +39,11 @@ async def create_user_inflow(inflow: schemas.InflowCreate, user_id: int):
     return schemas.InflowInDB(**inflow.dict(), id=inflow_id, owner_id=user_id)
 
 
-async def get_inflow_user(user_id: int):
+async def get_inflow_user(user_id: int, date_in: datetime, date_out: datetime):
     result = dict()
-    list_inflows = await database.fetch_all(inflows.select().where(inflows.c.owner_id == user_id))
+    list_inflows = await database.fetch_all(inflows.select().where(and_(inflows.c.owner_id == user_id,
+                                                                        inflows.c.date >= date_in,
+                                                                        inflows.c.date <= date_out)))
     result.update({"inflow": [dict(result) for result in list_inflows]})
     return result
 
@@ -64,9 +66,11 @@ async def create_user_outflow(outflow: schemas.OutflowCreate, user_id: int):
     return schemas.OutflowInDB(**outflow.dict(), id=outflow_id, owner_id=user_id)
 
 
-async def get_outflow_user(user_id: int):
+async def get_outflow_user(user_id: int, date_in: datetime, date_out: datetime):
     result = dict()
-    list_outflows = await database.fetch_all(outflows.select().where(outflows.c.owner_id == user_id))
+    list_outflows = await database.fetch_all(outflows.select().where(and_(inflows.c.owner_id == user_id,
+                                                                     inflows.c.date >= date_in,
+                                                                     inflows.c.date <= date_out)))
     result.update({"outflow": [dict(result) for result in list_outflows]})
     return result
 
@@ -118,7 +122,7 @@ async def delete_outflow_regular_user(outflow_regular_id: int, user_id: int):
     result = await database.execute(query)
     if result:
         query = outflows_regular.delete().where(and_(outflows_regular.c.id == outflow_regular_id,
-                                                 outflows_regular.c.owner_id == user_id))
+                                                outflows_regular.c.owner_id == user_id))
         await database.execute(query)
         result = {"result": "regular outflow deleted"}
     else:
