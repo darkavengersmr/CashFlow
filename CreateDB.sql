@@ -112,4 +112,4 @@ WITH (
 
 ALTER TABLE IF EXISTS public.liabilities
     OWNER to pi;
- 
+
