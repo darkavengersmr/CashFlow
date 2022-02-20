@@ -23,6 +23,16 @@ inflows = Table(
 )
 
 
+inflows_regular = Table(
+    "inflow_regular",
+    metadata,
+    Column("id", Integer, unique=True, primary_key=True, autoincrement=True),
+    Column("description", String, nullable=False, default='unknown'),
+    Column("sum", Integer, nullable=False, default=0),
+    Column("owner_id", Integer, ForeignKey("users.id"))
+)
+
+
 outflows = Table(
     "outflow",
     metadata,
@@ -64,5 +74,14 @@ liabilities = Table(
     Column("date_out", DateTime, nullable=False),
     Column("description", String, nullable=False, default='unknown'),
     Column("sum", Integer, nullable=False, default=0),
+    Column("owner_id", Integer, ForeignKey("users.id"))
+)
+
+
+categories = Table(
+    "categories",
+    metadata,
+    Column("id", Integer, unique=True, primary_key=True, autoincrement=True),
+    Column("category", String, nullable=False, default='unknown'),
     Column("owner_id", Integer, ForeignKey("users.id"))
 )

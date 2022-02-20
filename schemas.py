@@ -16,7 +16,6 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
-
 class UserBase(BaseModel):
     username: str
     email: str
@@ -81,10 +80,47 @@ class InflowUser(BaseModel):
         orm_mode = True
 
 
+class InflowRegularBase(BaseModel):
+    description: str = 'Ежемесячные доходы'
+    sum: int = 0
+
+
+class InflowRegularCreate(InflowRegularBase):
+    class Config:
+        orm_mode = True
+
+
+class InflowRegularInDB(InflowRegularBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class InflowRegularOut(BaseModel):
+    id: int
+    description: str
+    sum: int
+
+
+class InflowRegularUser(BaseModel):
+    inflow_regular: List[InflowRegularInDB] = []
+
+    class Config:
+        orm_mode = True
+
+
 class OutflowBase(BaseModel):
     date: datetime = datetime.now()
     description: str = 'Прочие расходы'
     sum: int = 0
+
+
+class OutflowOut(BaseModel):
+    description: str
+    sum: int
+    count: int
 
 
 class OutflowCreate(OutflowBase):
@@ -101,7 +137,7 @@ class OutflowInDB(OutflowBase):
 
 
 class OutflowUser(BaseModel):
-    outflow: List[OutflowInDB] = []
+    outflow: List[OutflowOut] = []
 
     class Config:
         orm_mode = True
@@ -181,7 +217,6 @@ class AssetUser(BaseModel):
         orm_mode = True
 
 
-
 class LiabilitieBase(BaseModel):
     date_in: datetime = datetime.now()
     date_out: datetime = datetime.now() + timedelta(days=100000)
@@ -220,6 +255,45 @@ class LiabilitieDelete(BaseModel):
 
 class LiabilitieUser(BaseModel):
     liabilities: List[LiabilitieOut] = []
+
+    class Config:
+        orm_mode = True
+
+
+class CategoryBase(BaseModel):
+    category: str = 'Прочая категория'
+
+
+class CategoryCreate(CategoryBase):
+    class Config:
+        orm_mode = True
+
+
+class CategoryInDB(CategoryBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class CategoryOut(BaseModel):
+    id: int
+    category: str
+
+    class Config:
+        orm_mode = True
+
+
+class CategoryDelete(BaseModel):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class CategoryUser(BaseModel):
+    categories: List[CategoryOut] = []
 
     class Config:
         orm_mode = True

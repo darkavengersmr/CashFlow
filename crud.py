@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from database import database
-from sqlalchemy import and_
-from models import users, inflows, outflows, outflows_regular, assets, liabilities
+from sqlalchemy import and_, func
+from models import users, inflows, inflows_regular, outflows, outflows_regular, assets, liabilities, categories
 import schemas
 
 
@@ -60,6 +60,49 @@ async def delete_inflow_user(inflow_id: int, user_id: int):
     return result
 
 
+async def create_user_inflow_regular(inflow_regular: schemas.InflowRegularCreate, user_id: int):
+    query = inflows_regular.insert().values(**inflow_regular.dict(), owner_id=user_id)
+    inflow_regular_id = await database.execute(query)
+    return schemas.InflowRegularInDB(**inflow_regular.dict(), id=inflow_regular_id, owner_id=user_id)
+
+
+async def get_inflow_regular_user(user_id: int):
+    result = dict()
+    list_inflows_regular = await database.fetch_all(
+        inflows_regular.select().where(inflows_regular.c.owner_id == user_id))
+    result.update({"inflow_regular": [dict(result) for result in list_inflows_regular]})
+    return result
+
+
+async def update_user_inflow_regular(user_id: int, inflow_regular: schemas.InflowRegularOut):
+    query = inflows_regular.select().where(and_(inflows_regular.c.id == inflow_regular.id,
+                                           inflows_regular.c.owner_id == user_id))
+    result = await database.execute(query)
+    if result:
+        query = inflows_regular.update().where(
+            and_(inflows_regular.c.id == inflow_regular.id, inflows_regular.c.owner_id == user_id)).values(
+            description=inflow_regular.description, sum=inflow_regular.sum)
+        await database.execute(query)
+        result = {"result": "inflow regular updated"}
+    else:
+        result = {"result": "inflow regular for update not found"}
+    return result
+
+
+async def delete_inflow_regular_user(inflow_regular_id: int, user_id: int):
+    query = inflows_regular.select().where(and_(inflows_regular.c.id == inflow_regular_id,
+                                                inflows_regular.c.owner_id == user_id))
+    result = await database.execute(query)
+    if result:
+        query = inflows_regular.delete().where(and_(inflows_regular.c.id == inflow_regular_id,
+                                               inflows_regular.c.owner_id == user_id))
+        await database.execute(query)
+        result = {"result": "regular inflow deleted"}
+    else:
+        result = {"result": "regular inflow for delete not found"}
+    return result
+
+
 async def create_user_outflow(outflow: schemas.OutflowCreate, user_id: int):
     query = outflows.insert().values(**outflow.dict(), owner_id=user_id)
     outflow_id = await database.execute(query)
@@ -68,18 +111,24 @@ async def create_user_outflow(outflow: schemas.OutflowCreate, user_id: int):
 
 async def get_outflow_user(user_id: int, date_in: datetime, date_out: datetime):
     result = dict()
-    list_outflows = await database.fetch_all(outflows.select().where(and_(inflows.c.owner_id == user_id,
-                                                                     inflows.c.date >= date_in,
-                                                                     inflows.c.date <= date_out)))
+    query = "SELECT description, sum(sum) as sum, count(description) as count FROM outflow " \
+            "WHERE owner_id = :owner_id AND date >= :date_in AND date <= :date_out " \
+            "GROUP BY description, owner_id " \
+            "ORDER BY count DESC"
+    list_outflows = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
+                                                                  "date_out": date_out})
+    # вариант без группировки и суммирования по аналогичным расходам за период
+    # list_outflows = await database.fetch_all(outflows.select().where(
+    #     and_(outflows.c.owner_id == user_id, outflows.c.date >= date_in, outflows.c.date <= date_out)))
     result.update({"outflow": [dict(result) for result in list_outflows]})
     return result
 
 
 async def delete_outflow_user(outflow_id: int, user_id: int):
-    query = outflows.select().where(and_(outflows.c.id == outflow_id, inflows.c.owner_id == user_id))
+    query = outflows.select().where(and_(outflows.c.id == outflow_id, outflows.c.owner_id == user_id))
     result = await database.execute(query)
     if result:
-        query = outflows.delete().where(and_(outflows.c.id == outflow_id, inflows.c.owner_id == user_id))
+        query = outflows.delete().where(and_(outflows.c.id == outflow_id, outflows.c.owner_id == user_id))
         await database.execute(query)
         result = {"result": "outflow deleted"}
     else:
@@ -198,4 +247,29 @@ async def update_user_liabilitie(liabilitie: schemas.LiabilitieOut, user_id: int
             result = {"result": "liabilitie deleted"}
     else:
         result = {"result": "liabilitie for update/delete not found"}
+    return result
+
+
+async def create_user_category(category: schemas.CategoryCreate, user_id: int):
+    query = categories.insert().values(**category.dict(), owner_id=user_id)
+    category_id = await database.execute(query)
+    return schemas.CategoryInDB(**category.dict(), id=category_id, owner_id=user_id)
+
+
+async def get_user_categories(user_id: int):
+    result = dict()
+    list_categories = await database.fetch_all(categories.select().where(categories.c.owner_id == user_id))
+    result.update({"categories": [dict(result) for result in list_categories]})
+    return result
+
+
+async def delete_user_category(category_id: int, user_id: int):
+    query = categories.select().where(and_(categories.c.id == category_id, categories.c.owner_id == user_id))
+    result = await database.execute(query)
+    if result:
+        query = categories.delete().where(and_(categories.c.id == category_id, categories.c.owner_id == user_id))
+        await database.execute(query)
+        result = {"result": "category deleted"}
+    else:
+        result = {"result": "category for delete not found"}
     return result
