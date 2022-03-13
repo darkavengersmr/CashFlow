@@ -1,9 +1,17 @@
+#!/usr/bin/python3
+
+import uvicorn
+
 from datetime import datetime, timedelta
 import calendar
+
+from typing import Optional
 
 from database import database, engine, metadata
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -14,7 +22,7 @@ from config import SECRET_KEY
 
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -82,11 +90,11 @@ async def shutdown():
     await database.disconnect()
 
 
-def get_password_hash(password: str):
+def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     #print(get_password_hash(plain_password))
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -164,6 +172,36 @@ def month_end():
                              "%Y-%m-%d %H:%M:%S")
 
 
+@app.get("/inflow")
+async def redirect_inflow():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
+@app.get("/outflow")
+async def redirect_outflow():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
+@app.get("/assets")
+async def redirect_assets():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
+@app.get("/liabilities")
+async def redirect_liabilities():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
+@app.get("/preferences")
+async def redirect_preferences():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
+@app.get("/login")
+async def redirect_login():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
 @app.post("/register", response_model=schemas.User, tags=["Register"])
 async def create_user(user: schemas.UserCreate):
     db_user = await crud.get_user_by_email(email=user.email)
@@ -195,7 +233,8 @@ async def read_user(current_user: schemas.User = Depends(get_current_active_user
 
 
 @app.get("/users/{user_id}/inflow/", response_model=schemas.InflowUser, tags=["Inflow"])
-async def get_inflow_for_user(user_id: int, date_in: datetime = month_begin(), date_out: datetime = month_end(),
+async def get_inflow_for_user(user_id: int, date_in: Optional[datetime] = month_begin(),
+                              date_out: Optional[datetime] = month_end(),
                               current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
     return await crud.get_inflow_user(user_id=user_id, date_in=date_in, date_out=date_out)
@@ -364,3 +403,10 @@ async def delete_category_for_user(user_id: int, category_id: int,
                                    current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
     return await crud.delete_user_category(category_id=category_id, user_id=user_id)
+
+
+app.mount("/", StaticFiles(directory="static"), name="static")
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

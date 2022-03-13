@@ -4,3 +4,5 @@ asyncpg
 sqlalchemy
 databases
 uvicorn
+pytest
+requests

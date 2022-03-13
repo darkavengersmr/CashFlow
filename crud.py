@@ -110,16 +110,18 @@ async def create_user_outflow(outflow: schemas.OutflowCreate, user_id: int):
 
 
 async def get_outflow_user(user_id: int, date_in: datetime, date_out: datetime):
-    result = dict()
-    query = "SELECT description, sum(sum) as sum, count(description) as count FROM outflow " \
-            "WHERE owner_id = :owner_id AND date >= :date_in AND date <= :date_out " \
-            "GROUP BY description, owner_id " \
-            "ORDER BY count DESC"
-    list_outflows = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
-                                                                  "date_out": date_out})
+    # вариант c группировкой и суммированием по аналогичным расходам за период
+    # result = dict()
+    # query = "SELECT description, sum(sum) as sum, count(description) as count FROM outflow " \
+    #         "WHERE owner_id = :owner_id AND date >= :date_in AND date <= :date_out " \
+    #         "GROUP BY description, owner_id " \
+    #         "ORDER BY count DESC"
+    # list_outflows = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
+    #                                                               "date_out": date_out})
     # вариант без группировки и суммирования по аналогичным расходам за период
-    # list_outflows = await database.fetch_all(outflows.select().where(
-    #     and_(outflows.c.owner_id == user_id, outflows.c.date >= date_in, outflows.c.date <= date_out)))
+    result = dict()
+    list_outflows = await database.fetch_all(outflows.select().where(
+        and_(outflows.c.owner_id == user_id, outflows.c.date >= date_in, outflows.c.date <= date_out)))
     result.update({"outflow": [dict(result) for result in list_outflows]})
     return result
 
@@ -198,11 +200,17 @@ async def update_user_asset(asset: schemas.AssetOut, user_id: int):
     query = assets.select().where(and_(assets.c.id == asset.id, assets.c.owner_id == user_id))
     result = await database.execute(query)
     if result:
+        dt = asset.date
+        dt_end = datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-01 00:00:00", "%Y-%m-%d %H:%M:%S") \
+                 - timedelta(seconds=1)
         query = assets.update().where(and_(assets.c.id == asset.id, assets.c.owner_id == user_id)).values(
-            date_out=datetime.now())
+            date_out=dt_end)
         await database.execute(query)
         if hasattr(asset, 'sum') and asset.sum > 0:
-            query = assets.insert().values(date_in=datetime.now(), date_out=datetime.now() + timedelta(days=100000),
+            dt = datetime.now()
+            dt_begin = datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-01 00:00:00",
+                                         "%Y-%m-%d %H:%M:%S")
+            query = assets.insert().values(date_in=dt_begin, date_out=datetime.now() + timedelta(days=100000),
                                            description=asset.description, sum=asset.sum, owner_id=user_id)
             await database.execute(query)
             result = {"result": "asset updated"}
@@ -232,11 +240,18 @@ async def update_user_liabilitie(liabilitie: schemas.LiabilitieOut, user_id: int
     query = liabilities.select().where(and_(liabilities.c.id == liabilitie.id, liabilities.c.owner_id == user_id))
     result = await database.execute(query)
     if result:
+        dt = liabilitie.date
+        dt_end = datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-01 00:00:00", "%Y-%m-%d %H:%M:%S")\
+                 - timedelta(seconds=1)
         query = liabilities.update().where(
-            and_(liabilities.c.id == liabilitie.id, liabilities.c.owner_id == user_id)).values(date_out=datetime.now())
+            and_(liabilities.c.id == liabilitie.id, liabilities.c.owner_id == user_id))\
+            .values(date_out=dt_end)
         await database.execute(query)
         if hasattr(liabilitie, 'sum') and liabilitie.sum > 0:
-            query = liabilities.insert().values(date_in=datetime.now(),
+            dt = datetime.now()
+            dt_begin = datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-01 00:00:00",
+                                         "%Y-%m-%d %H:%M:%S")
+            query = liabilities.insert().values(date_in=dt_begin,
                                                 date_out=datetime.now() + timedelta(days=100000),
                                                 description=liabilitie.description,
                                                 sum=liabilitie.sum,

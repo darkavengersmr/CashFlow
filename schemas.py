@@ -137,7 +137,7 @@ class OutflowInDB(OutflowBase):
 
 
 class OutflowUser(BaseModel):
-    outflow: List[OutflowOut] = []
+    outflow: List[OutflowInDB] = []
 
     class Config:
         orm_mode = True
@@ -175,7 +175,8 @@ class OutflowRegularUser(BaseModel):
 
 
 class AssetBase(BaseModel):
-    date_in: datetime = datetime.now()
+    date_in: datetime = datetime.strptime(f"{datetime.now().timetuple().tm_year}-{datetime.now().timetuple().tm_mon}-"
+                                          f"01 00:00:00", "%Y-%m-%d %H:%M:%S")
     date_out: datetime = datetime.now() + timedelta(days=100000)
     description: str = 'Прочие активы'
     sum: int = 0
@@ -205,6 +206,7 @@ class AssetOut(BaseModel):
 
 class AssetDelete(BaseModel):
     id: int
+    date: datetime = datetime.now()
 
     class Config:
         orm_mode = True
@@ -218,7 +220,8 @@ class AssetUser(BaseModel):
 
 
 class LiabilitieBase(BaseModel):
-    date_in: datetime = datetime.now()
+    date_in: datetime = datetime.strptime(f"{datetime.now().timetuple().tm_year}-{datetime.now().timetuple().tm_mon}-"
+                                          f"01 00:00:00", "%Y-%m-%d %H:%M:%S")
     date_out: datetime = datetime.now() + timedelta(days=100000)
     description: str = 'Прочие пассивы'
     sum: int = 0
@@ -248,6 +251,7 @@ class LiabilitieOut(BaseModel):
 
 class LiabilitieDelete(BaseModel):
     id: int
+    date: datetime = datetime.now()
 
     class Config:
         orm_mode = True
