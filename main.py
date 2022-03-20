@@ -71,6 +71,10 @@ tags_metadata = [
         "name": "Categories",
         "description": "Категории активов и пассивов",
     },
+{
+        "name": "Reports",
+        "description": "Отчеты",
+    },
 ]
 
 app = FastAPI(
@@ -403,6 +407,12 @@ async def delete_category_for_user(user_id: int, category_id: int,
                                    current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
     return await crud.delete_user_category(category_id=category_id, user_id=user_id)
+
+
+@app.get("/users/{user_id}/reports/", response_model=schemas.ReportsUser, tags=["Reports"])
+async def get_reports(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user.email)
+    return await crud.get_reports(user_id=user_id)
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")

@@ -301,3 +301,18 @@ class CategoryUser(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ReportsBase(BaseModel):
+    description: str
+    sum: int
+
+
+class ReportsUser(BaseModel):
+    assets: List[ReportsBase] = []
+    liabilities: List[ReportsBase] = []
+
+    class Config:
+        orm_mode = True
+
+

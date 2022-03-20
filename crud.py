@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import calendar
 
 from database import database
 from sqlalchemy import and_, func
@@ -288,3 +289,46 @@ async def delete_user_category(category_id: int, user_id: int):
     else:
         result = {"result": "category for delete not found"}
     return result
+
+
+async def get_reports(user_id: int):
+    out = dict()
+    assets_result = []
+    liabilities_result = []
+
+    dt = datetime.now()
+    while True:
+        date = datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-15 00:00:00", "%Y-%m-%d %H:%M:%S")
+        this_month_begin = datetime.strptime(f"{dt.timetuple().tm_year}-{dt.timetuple().tm_mon}-01 00:00:00",
+                                             "%Y-%m-%d %H:%M:%S")
+
+        list_assets = await database.fetch_all(assets.select().where(and_(assets.c.owner_id == user_id,
+                                                                          assets.c.date_in <= date,
+                                                                          date <= assets.c.date_out)))
+        month_assets = [dict(result) for result in list_assets]
+        month_assets_sum = 0
+        for month_asset in month_assets:
+            month_assets_sum += month_asset['sum']
+        month_date = str(date)[5:7] + "." + str(date)[2:4]
+        if month_assets_sum > 0:
+            assets_result.append({"description": month_date, "sum": month_assets_sum})
+
+        list_liabilities = await database.fetch_all(liabilities.select().where(and_(liabilities.c.owner_id == user_id,
+                                                                                    liabilities.c.date_in <= date,
+                                                                                    date <= liabilities.c.date_out)))
+        month_liabilities = [dict(result) for result in list_liabilities]
+        month_liabilities_sum = 0
+        for month_asset in month_liabilities:
+            month_liabilities_sum += month_asset['sum']
+        month_date = str(date)[5:7] + "." + str(date)[2:4]
+        if month_liabilities_sum > 0:
+            liabilities_result.append({ "description": month_date, "sum": month_liabilities_sum})
+
+        dt = this_month_begin - timedelta(seconds=1)
+        if len(list_assets) == 0 and len(list_liabilities) == 0:
+            break
+
+    out.update({"assets": assets_result})
+    out.update({"liabilities": liabilities_result})
+
+    return out
