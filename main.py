@@ -11,7 +11,7 @@ from database import database, engine, metadata
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -413,6 +413,14 @@ async def delete_category_for_user(user_id: int, category_id: int,
 async def get_reports(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
     return await crud.get_reports(user_id=user_id)
+
+
+@app.get("/users/{user_id}/export/", tags=["Reports"])
+async def get_export(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user.email)
+    await crud.get_export(user_id=user_id)
+    return FileResponse(path=f'.\\static\\export\\cashflow{user_id}.xlsx', filename=f'cashflow{user_id}.xlsx',
+                        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")

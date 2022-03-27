@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel, BaseSettings
+
 
 
 class Settings(BaseSettings):
@@ -180,6 +181,7 @@ class AssetBase(BaseModel):
     date_out: datetime = datetime.now() + timedelta(days=100000)
     description: str = 'Прочие активы'
     sum: int = 0
+    category_id: Union[int, None]
 
 
 class AssetCreate(AssetBase):
@@ -199,6 +201,7 @@ class AssetOut(BaseModel):
     id: int
     description: str
     sum: int
+    category_id: Union[int, None]
 
     class Config:
         orm_mode = True
@@ -225,6 +228,7 @@ class LiabilitieBase(BaseModel):
     date_out: datetime = datetime.now() + timedelta(days=100000)
     description: str = 'Прочие пассивы'
     sum: int = 0
+    category_id: Union[int, None] = None
 
 
 class LiabilitieCreate(LiabilitieBase):
@@ -244,6 +248,7 @@ class LiabilitieOut(BaseModel):
     id: int
     description: str
     sum: int
+    category_id: Union[int, None]
 
     class Config:
         orm_mode = True

@@ -62,6 +62,7 @@ assets = Table(
     Column("date_out", DateTime, nullable=False),
     Column("description", String, nullable=False, default='unknown'),
     Column("sum", Integer, nullable=False, default=0),
+    Column("category_id", Integer, nullable=True),
     Column("owner_id", Integer, ForeignKey("users.id"))
 )
 
@@ -74,6 +75,7 @@ liabilities = Table(
     Column("date_out", DateTime, nullable=False),
     Column("description", String, nullable=False, default='unknown'),
     Column("sum", Integer, nullable=False, default=0),
+    Column("category_id", Integer, nullable=True),
     Column("owner_id", Integer, ForeignKey("users.id"))
 )
 

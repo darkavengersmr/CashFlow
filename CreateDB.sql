@@ -95,7 +95,8 @@ CREATE TABLE public.assets
 	date_out timestamp without time zone,
 	description text NOT NULL,
 	sum integer,
-	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+	category_id integer REFERENCES category(id) ON DELETE CASCADE,
+	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,	
 	CONSTRAINT pk_assets_id PRIMARY KEY (id)
 )
 
@@ -114,6 +115,7 @@ CREATE TABLE public.liabilities
 	date_out timestamp without time zone,
 	description text NOT NULL,
 	sum integer,
+	category_id integer REFERENCES category(id) ON DELETE CASCADE,
 	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
 	CONSTRAINT pk_liabilities_id PRIMARY KEY (id)
 )

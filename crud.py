@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
-import calendar
 
 from database import database
 from sqlalchemy import and_, func
 from models import users, inflows, inflows_regular, outflows, outflows_regular, assets, liabilities, categories
 import schemas
 
+from openpyxl import load_workbook
+from openpyxl.styles import Font
 
 async def get_user(user_id: int):
     result = await database.fetch_one(users.select().where(users.c.id == user_id))
@@ -332,3 +333,201 @@ async def get_reports(user_id: int):
     out.update({"liabilities": liabilities_result})
 
     return out
+
+
+async def get_export(user_id: int):
+    wb = load_workbook('.\\static\\export\\template.xlsx')
+    bold = Font(bold=True)
+    this_month_end = datetime.now()
+    report = dict()
+    while True:
+        this_month_begin = datetime.strptime(f"{this_month_end.timetuple().tm_year}-{this_month_end.timetuple().tm_mon}"
+                                             f"-01 00:00:00", "%Y-%m-%d %H:%M:%S")
+
+        if this_month_end.timetuple().tm_mon < 10:
+            this_month = f'0{this_month_end.timetuple().tm_mon}'
+        else:
+            this_month = f'{this_month_end.timetuple().tm_mon}'
+        this_year_month = f"{this_month_end.timetuple().tm_year}-{this_month}"
+        wb.create_sheet(this_year_month)
+        sht = wb[this_year_month]
+        sht.column_dimensions["A"].width = 32
+        sht.column_dimensions["B"].width = 10
+        sht.column_dimensions["C"].width = 8
+        sht.column_dimensions["D"].width = 32
+        sht.column_dimensions["E"].width = 12
+
+        # экспорт доходов
+        cashflow = 0
+        inflows = await get_inflow_user(user_id, this_month_begin, this_month_end)
+        cell = sht.cell(row=1, column=1)
+        cell.value = 'Доходы'
+        cell.font = bold
+        inflow_row = 1
+        inflow_sum = 0
+        row = 2
+        column = 1
+        for month_inflows in inflows['inflow']:
+            cell = sht.cell(row=row, column=column)
+            cell.value = month_inflows['description']
+            cell = sht.cell(row=row, column=column+1)
+            cell.value = month_inflows['sum']
+            inflow_sum += month_inflows['sum']
+            cashflow += month_inflows['sum']
+            row += 1
+
+        # экспорт расходов
+        row += 1
+        outflows = await get_outflow_user(user_id, this_month_begin, this_month_end)
+        cell = sht.cell(row=row, column=column)
+        cell.value = 'Расходы'
+        cell.font = bold
+        outflow_row = row
+        outflow_sum = 0
+        row += 1
+        for month_outflows in outflows['outflow']:
+            cell = sht.cell(row=row, column=column)
+            cell.value = month_outflows['description']
+            cell = sht.cell(row=row, column=column+1)
+            cell.value = month_outflows['sum']
+            outflow_sum += month_outflows['sum']
+            cashflow -= month_outflows['sum']
+            row += 1
+
+        # расчте денежного потока и общих сумм доходов и расходов
+        row += 1
+        cell = sht.cell(row=row, column=column)
+        cell.value = 'Денежный поток'
+        cell.font = bold
+        cell = sht.cell(row=row, column=column+1)
+        cell.value = cashflow
+        cell.font = bold
+
+        cell = sht.cell(row=inflow_row, column=column+1)
+        cell.value = inflow_sum
+        cell.font = bold
+        cell = sht.cell(row=outflow_row, column=column+1)
+        cell.value = outflow_sum
+        cell.font = bold
+
+        # экспорт активов
+        capital = 0
+        assets = await get_assets_user(user_id, this_month_begin+timedelta(days=15))
+        cell = sht.cell(row=1, column=4)
+        cell.value = 'Активы'
+        cell.font = bold
+        assets_row = 1
+        assets_sum = 0
+        row = 2
+        column = 4
+        for month_assets in assets['assets']:
+            cell = sht.cell(row=row, column=column)
+            cell.value = month_assets['description']
+            cell = sht.cell(row=row, column=column+1)
+            cell.value = month_assets['sum']
+            assets_sum += month_assets['sum']
+            capital += month_assets['sum']
+            row += 1
+
+        # экспорт пассивов
+        row += 1
+        liabilities = await get_liabilities_user(user_id, this_month_begin+timedelta(days=15))
+        cell = sht.cell(row=row, column=column)
+        cell.value = 'Пассивы'
+        cell.font = bold
+        liabilities_row = row
+        liabilities_sum = 0
+        row += 1
+        for month_liabilities in liabilities['liabilities']:
+            cell = sht.cell(row=row, column=column)
+            cell.value = month_liabilities['description']
+            cell = sht.cell(row=row, column=column+1)
+            cell.value = month_liabilities['sum']
+            liabilities_sum += month_liabilities['sum']
+            capital -= month_liabilities['sum']
+            row += 1
+
+        # расчет капитала и общих сумм активов и пассивов
+        row += 1
+        cell = sht.cell(row=row, column=column)
+        cell.value = 'Капитал'
+        cell.font = bold
+        cell = sht.cell(row=row, column=column+1)
+        cell.value = capital
+        cell.font = bold
+
+        cell = sht.cell(row=assets_row, column=column+1)
+        cell.value = assets_sum
+        cell.font = bold
+        cell = sht.cell(row=liabilities_row, column=column+1)
+        cell.value = liabilities_sum
+        cell.font = bold
+
+        # экспорт переход к следующему месяцу
+        this_month_end = this_month_begin - timedelta(seconds=1)
+        if inflow_sum + outflow_sum == 0:
+            sht = wb.get_sheet_by_name(this_year_month)
+            wb.remove_sheet(sht)
+            break
+        else:
+            report[this_year_month] = dict()
+            report[this_year_month]['inflow'] = inflow_sum
+            report[this_year_month]['outflow'] = outflow_sum
+            report[this_year_month]['assets'] = assets_sum
+            report[this_year_month]['liabilities'] = liabilities_sum
+
+    sht = wb.get_sheet_by_name('clear')
+    wb.remove_sheet(sht)
+
+    wb.create_sheet('Свод', 0)
+    sht = wb['Свод']
+    sht.column_dimensions["A"].width = 10
+    sht.column_dimensions["B"].width = 10
+    sht.column_dimensions["C"].width = 10
+    sht.column_dimensions["D"].width = 10
+    sht.column_dimensions["E"].width = 10
+    sht.column_dimensions["F"].width = 10
+    sht.column_dimensions["G"].width = 10
+    cell = sht.cell(row=1, column=1)
+    cell.value = 'Дата'
+    cell.font = bold
+    cell = sht.cell(row=1, column=2)
+    cell.value = 'Доходы'
+    cell.font = bold
+    cell = sht.cell(row=1, column=3)
+    cell.value = 'Расходы'
+    cell.font = bold
+    cell = sht.cell(row=1, column=4)
+    cell.value = 'Cahflow'
+    cell.font = bold
+    cell = sht.cell(row=1, column=5)
+    cell.value = 'Активы'
+    cell.font = bold
+    cell = sht.cell(row=1, column=6)
+    cell.value = 'Пассивы'
+    cell.font = bold
+    cell = sht.cell(row=1, column=7)
+    cell.value = 'Капитал'
+    cell.font = bold
+
+    report = dict(sorted(report.items(), key=lambda x: x[0]))
+    row = 1
+    for month in report:
+        row += 1
+        cell = sht.cell(row=row, column=1)
+        cell.value = month
+        cell = sht.cell(row=row, column=2)
+        cell.value = report[month]['inflow']
+        cell = sht.cell(row=row, column=3)
+        cell.value = report[month]['outflow']
+        cell = sht.cell(row=row, column=4)
+        cell.value = report[month]['inflow'] - report[month]['outflow']
+        cell = sht.cell(row=row, column=5)
+        cell.value = report[month]['assets']
+        cell = sht.cell(row=row, column=6)
+        cell.value = report[month]['liabilities']
+        cell = sht.cell(row=row, column=7)
+        cell.value = report[month]['assets'] - report[month]['liabilities']
+
+    wb.save(f'.\\static\\export\\cashflow{user_id}.xlsx')
+
