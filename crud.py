@@ -281,14 +281,33 @@ async def get_user_categories(user_id: int):
 
 
 async def delete_user_category(category_id: int, user_id: int):
-    query = categories.select().where(and_(categories.c.id == category_id, categories.c.owner_id == user_id))
-    result = await database.execute(query)
-    if result:
-        query = categories.delete().where(and_(categories.c.id == category_id, categories.c.owner_id == user_id))
-        await database.execute(query)
-        result = {"result": "category deleted"}
+    query = "SELECT category_id FROM assets WHERE owner_id = :owner_id AND category_id = :category_id"
+    categories_in_asset = await database.fetch_all(query=query, values={"owner_id": user_id,
+                                                                        "category_id": category_id})
+    query = "SELECT category_id FROM liabilities WHERE owner_id = :owner_id AND category_id = :category_id"
+    categories_in_liabilities = await database.fetch_all(query=query, values={"owner_id": user_id,
+                                                                              "category_id": category_id})
+    if categories_in_asset or categories_in_liabilities:
+        result = {"result": "category in use, not deleted"}
     else:
-        result = {"result": "category for delete not found"}
+        query = categories.select().where(and_(categories.c.id == category_id, categories.c.owner_id == user_id))
+        result = await database.execute(query)
+        if result:
+            query = categories.delete().where(and_(categories.c.id == category_id, categories.c.owner_id == user_id))
+            await database.execute(query)
+            result = {"result": "category deleted"}
+        else:
+            result = {"result": "category for delete not found"}
+    return result
+
+
+async def get_assets_by_categories(user_id: int, date: datetime, asset: str):
+    result = dict()
+    query = "SELECT category_id, sum(sum) as sum FROM " + asset + " " \
+            "WHERE owner_id = :owner_id AND date_in <= :date AND date_out >= :date " \
+            "GROUP BY category_id, owner_id"
+    list_categories = await database.fetch_all(query=query, values={"owner_id": user_id, "date": date})
+    result.update({"categories": [dict(result) for result in list_categories]})
     return result
 
 
@@ -338,8 +357,15 @@ async def get_reports(user_id: int):
 async def get_export(user_id: int):
     wb = load_workbook('.\\static\\export\\template.xlsx')
     bold = Font(bold=True)
+
     this_month_end = datetime.now()
     report = dict()
+
+    # забираем категории пользователя
+    db_user_categories = await get_user_categories(user_id)
+    user_categories = {result['id']:result['category'] for result in db_user_categories['categories']}
+    user_categories[None]='Без категории'
+
     while True:
         this_month_begin = datetime.strptime(f"{this_month_end.timetuple().tm_year}-{this_month_end.timetuple().tm_mon}"
                                              f"-01 00:00:00", "%Y-%m-%d %H:%M:%S")
@@ -349,6 +375,9 @@ async def get_export(user_id: int):
         else:
             this_month = f'{this_month_end.timetuple().tm_mon}'
         this_year_month = f"{this_month_end.timetuple().tm_year}-{this_month}"
+
+        report[this_year_month] = dict()
+
         wb.create_sheet(this_year_month)
         sht = wb[this_year_month]
         sht.column_dimensions["A"].width = 32
@@ -456,6 +485,42 @@ async def get_export(user_id: int):
         cell.value = capital
         cell.font = bold
 
+        # суммы по категориям активов и пассивов
+        row += 2
+        cell = sht.cell(row=row, column=column)
+        cell.value = 'По категориям'
+        cell.font = bold
+
+        asset_by_categories = await get_assets_by_categories(user_id, this_month_begin+timedelta(days=15), "assets")
+        row += 1
+        for month_asset_by_categories in asset_by_categories['categories']:
+            cell = sht.cell(row=row, column=column)
+            if month_asset_by_categories['category_id'] is not None:
+                cell.value = user_categories[month_asset_by_categories['category_id']]
+                report[this_year_month][user_categories[month_asset_by_categories['category_id']]] = \
+                    month_asset_by_categories['sum']
+            else:
+                cell.value = "Активы без категории"
+                report[this_year_month]["Активы без категории"] = month_asset_by_categories['sum']
+            cell = sht.cell(row=row, column=column + 1)
+            cell.value = month_asset_by_categories['sum']
+            row += 1
+
+        liabilities_by_categories = await get_assets_by_categories(user_id, this_month_begin+timedelta(days=15),
+                                                                   "liabilities")
+        for month_liabilities_by_categories in liabilities_by_categories['categories']:
+            cell = sht.cell(row=row, column=column)
+            if month_liabilities_by_categories['category_id'] is not None:
+                cell.value = user_categories[month_liabilities_by_categories['category_id']]
+                report[this_year_month][user_categories[month_liabilities_by_categories['category_id']]] = \
+                    month_liabilities_by_categories['sum']
+            else:
+                cell.value = "Пассивы без категории"
+                report[this_year_month]["Пассивы без категории"] = month_liabilities_by_categories['sum']
+            cell = sht.cell(row=row, column=column + 1)
+            cell.value = month_liabilities_by_categories['sum']
+            row += 1
+
         cell = sht.cell(row=assets_row, column=column+1)
         cell.value = assets_sum
         cell.font = bold
@@ -463,14 +528,14 @@ async def get_export(user_id: int):
         cell.value = liabilities_sum
         cell.font = bold
 
-        # экспорт переход к следующему месяцу
+        # переход к следующему месяцу
         this_month_end = this_month_begin - timedelta(seconds=1)
         if inflow_sum + outflow_sum == 0:
             sht = wb.get_sheet_by_name(this_year_month)
             wb.remove_sheet(sht)
+            report.pop(this_year_month)
             break
         else:
-            report[this_year_month] = dict()
             report[this_year_month]['inflow'] = inflow_sum
             report[this_year_month]['outflow'] = outflow_sum
             report[this_year_month]['assets'] = assets_sum
@@ -481,13 +546,10 @@ async def get_export(user_id: int):
 
     wb.create_sheet('Свод', 0)
     sht = wb['Свод']
-    sht.column_dimensions["A"].width = 10
-    sht.column_dimensions["B"].width = 10
-    sht.column_dimensions["C"].width = 10
-    sht.column_dimensions["D"].width = 10
-    sht.column_dimensions["E"].width = 10
-    sht.column_dimensions["F"].width = 10
-    sht.column_dimensions["G"].width = 10
+
+    for symbol in range(65, 80):
+        sht.column_dimensions[chr(symbol)].width = 10
+
     cell = sht.cell(row=1, column=1)
     cell.value = 'Дата'
     cell.font = bold
@@ -510,6 +572,23 @@ async def get_export(user_id: int):
     cell.value = 'Капитал'
     cell.font = bold
 
+    column = 8
+    for category in user_categories:
+        if user_categories[category] != "Без категории":
+            cell = sht.cell(row=1, column=column)
+            cell.value = user_categories[category]
+            cell.font = bold
+            column += 1
+        else:
+            cell = sht.cell(row=1, column=column)
+            cell.value = "Активы без категории"
+            cell.font = bold
+            column += 1
+            cell = sht.cell(row=1, column=column)
+            cell.value = "Пассивы без категории"
+            cell.font = bold
+            column += 1
+
     report = dict(sorted(report.items(), key=lambda x: x[0]))
     row = 1
     for month in report:
@@ -528,6 +607,32 @@ async def get_export(user_id: int):
         cell.value = report[month]['liabilities']
         cell = sht.cell(row=row, column=7)
         cell.value = report[month]['assets'] - report[month]['liabilities']
+
+        column = 8
+        for category in user_categories:
+            if user_categories[category] != "Без категории":
+                if user_categories[category] in report[month]:
+                    cell = sht.cell(row=row, column=column)
+                    cell.value = report[month][user_categories[category]]
+                else:
+                    cell = sht.cell(row=row, column=column)
+                    cell.value = 0
+                column += 1
+            else:
+                if "Активы без категории" in report[month]:
+                    cell = sht.cell(row=row, column=column)
+                    cell.value = report[month]["Активы без категории"]
+                else:
+                    cell = sht.cell(row=row, column=column)
+                    cell.value = 0
+                column += 1
+                if "Пассивы без категории" in report[month]:
+                    cell = sht.cell(row=row, column=column)
+                    cell.value = report[month]["Пассивы без категории"]
+                else:
+                    cell = sht.cell(row=row, column=column)
+                    cell.value = 0
+                column += 1
 
     wb.save(f'.\\static\\export\\cashflow{user_id}.xlsx')
 
