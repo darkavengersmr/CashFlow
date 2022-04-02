@@ -636,3 +636,20 @@ async def get_export(user_id: int):
 
     wb.save(f'.\\static\\export\\cashflow{user_id}.xlsx')
 
+
+async def get_most_popular(user_id: int, date_in: datetime, date_out: datetime):
+    result = dict()
+    query = "SELECT description, COUNT(description) AS sum FROM outflow " \
+            "WHERE owner_id = :owner_id AND description NOT IN " \
+            "(SELECT description FROM outflow WHERE owner_id = :owner_id " \
+            "AND :date_in < date AND date < :date_out) " \
+            "AND description NOT IN (SELECT description FROM outflow_regular WHERE owner_id = :owner_id)" \
+            "GROUP BY description " \
+            "ORDER BY sum DESC LIMIT 3"
+
+    list_most_popular = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
+                                                                      "date_out": date_out})
+
+    result.update({"most_popular": [dict(result) for result in list_most_popular]})
+
+    return result

@@ -71,9 +71,13 @@ tags_metadata = [
         "name": "Categories",
         "description": "Категории активов и пассивов",
     },
-{
+    {
         "name": "Reports",
         "description": "Отчеты",
+    },
+    {
+        "name": "Most polular",
+        "description": "Самые популярные доходы/расходы (для подсказок)",
     },
 ]
 
@@ -421,6 +425,13 @@ async def get_export(user_id: int, current_user: schemas.User = Depends(get_curr
     await crud.get_export(user_id=user_id)
     return FileResponse(path=f'.\\static\\export\\cashflow{user_id}.xlsx', filename=f'cashflow{user_id}.xlsx',
                         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@app.get("/users/{user_id}/most_popular/", response_model=schemas.MostPopular, tags=["Most polular"])
+async def get_most_popular(user_id: int, date_in: datetime = month_begin(), date_out: datetime = month_end(),
+                           current_user: schemas.User = Depends(get_current_active_user)):
+    await is_user(user_id, current_user.email)
+    return await crud.get_most_popular(user_id=user_id, date_in=date_in, date_out=date_out)
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")

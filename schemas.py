@@ -321,3 +321,13 @@ class ReportsUser(BaseModel):
         orm_mode = True
 
 
+class Popular(BaseModel):
+    description: str
+    sum: int
+
+
+class MostPopular(BaseModel):
+    most_popular: List[Popular] = []
+
+    class Config:
+        orm_mode = True
