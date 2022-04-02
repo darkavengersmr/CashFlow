@@ -70,8 +70,19 @@ async def create_user_inflow_regular(inflow_regular: schemas.InflowRegularCreate
 
 async def get_inflow_regular_user(user_id: int):
     result = dict()
+    result = dict()
+    query = "SELECT inflow_regular.description, inflow_lastsum.sum, inflow_regular.id, inflow_regular.owner_id " \
+            "FROM inflow_regular, inflow_lastsum WHERE inflow_regular.owner_id = :owner_id " \
+            "AND inflow_regular.owner_id = inflow_lastsum.owner_id " \
+            "AND inflow_regular.description = inflow_lastsum.description " \
+            "UNION SELECT description, sum, id, owner_id FROM inflow_regular WHERE description NOT IN (" \
+            "SELECT description FROM inflow WHERE owner_id = :owner_id)"
+
+    list_inflows_regular = await database.fetch_all(query=query, values={"owner_id": user_id})
+    '''
     list_inflows_regular = await database.fetch_all(
         inflows_regular.select().where(inflows_regular.c.owner_id == user_id))
+    '''
     result.update({"inflow_regular": [dict(result) for result in list_inflows_regular]})
     return result
 
@@ -148,8 +159,18 @@ async def create_user_outflow_regular(outflow_regular: schemas.OutflowRegularCre
 
 async def get_outflow_regular_user(user_id: int):
     result = dict()
+    query = "SELECT outflow_regular.description, outflow_lastsum.sum, outflow_regular.id, outflow_regular.owner_id " \
+            "FROM outflow_regular, outflow_lastsum WHERE outflow_regular.owner_id = :owner_id " \
+            "AND outflow_regular.owner_id = outflow_lastsum.owner_id " \
+            "AND outflow_regular.description = outflow_lastsum.description " \
+            "UNION SELECT description, sum, id, owner_id FROM outflow_regular WHERE description NOT IN (" \
+            "SELECT description FROM outflow WHERE owner_id = :owner_id)"
+
+    list_outflows_regular = await database.fetch_all(query=query, values={"owner_id": user_id})
+    '''
     list_outflows_regular = await database.fetch_all(
         outflows_regular.select().where(outflows_regular.c.owner_id == user_id))
+    '''
     result.update({"outflow_regular": [dict(result) for result in list_outflows_regular]})
     return result
 

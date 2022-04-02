@@ -95,7 +95,7 @@ CREATE TABLE public.assets
 	date_out timestamp without time zone,
 	description text NOT NULL,
 	sum integer,
-	category_id integer REFERENCES category(id) ON DELETE CASCADE,
+	category_id integer REFERENCES categories(id) ON DELETE CASCADE,
 	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,	
 	CONSTRAINT pk_assets_id PRIMARY KEY (id)
 )
@@ -115,7 +115,7 @@ CREATE TABLE public.liabilities
 	date_out timestamp without time zone,
 	description text NOT NULL,
 	sum integer,
-	category_id integer REFERENCES category(id) ON DELETE CASCADE,
+	category_id integer REFERENCES categories(id) ON DELETE CASCADE,
 	owner_id integer REFERENCES users(id) ON DELETE CASCADE NOT NULL,
 	CONSTRAINT pk_liabilities_id PRIMARY KEY (id)
 )
@@ -142,3 +142,31 @@ WITH (
 
 ALTER TABLE IF EXISTS public.categories
     OWNER to pi;
+
+
+CREATE VIEW public.inflow_lastsum
+ AS
+ SELECT inflow.description,
+    inflow.sum,
+    inflow.owner_id
+   FROM inflow
+  WHERE inflow.date = (( SELECT max(inflow_1.date) AS max
+           FROM inflow inflow_1
+          WHERE inflow_1.description = inflow.description));
+
+ALTER TABLE public.inflow_lastsum
+    OWNER TO pi;
+
+
+CREATE VIEW public.outflow_lastsum
+ AS
+ SELECT outflow.description,
+    outflow.sum,
+    outflow.owner_id
+   FROM outflow
+  WHERE outflow.date = (( SELECT max(outflow_1.date) AS max
+           FROM outflow outflow_1
+          WHERE outflow_1.description = outflow.description));
+
+ALTER TABLE public.outflow_lastsum
+    OWNER TO pi;
