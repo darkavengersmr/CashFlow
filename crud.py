@@ -70,7 +70,6 @@ async def create_user_inflow_regular(inflow_regular: schemas.InflowRegularCreate
 
 async def get_inflow_regular_user(user_id: int):
     result = dict()
-    result = dict()
     query = "SELECT inflow_regular.description, inflow_lastsum.sum, inflow_regular.id, inflow_regular.owner_id " \
             "FROM inflow_regular, inflow_lastsum WHERE inflow_regular.owner_id = :owner_id " \
             "AND inflow_regular.owner_id = inflow_lastsum.owner_id " \
@@ -123,14 +122,16 @@ async def create_user_outflow(outflow: schemas.OutflowCreate, user_id: int):
 
 
 async def get_outflow_user(user_id: int, date_in: datetime, date_out: datetime):
+    '''
     # вариант c группировкой и суммированием по аналогичным расходам за период
-    # result = dict()
-    # query = "SELECT description, sum(sum) as sum, count(description) as count FROM outflow " \
-    #         "WHERE owner_id = :owner_id AND date >= :date_in AND date <= :date_out " \
-    #         "GROUP BY description, owner_id " \
-    #         "ORDER BY count DESC"
-    # list_outflows = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
-    #                                                               "date_out": date_out})
+    result = dict()
+    query = "SELECT description, sum(sum) as sum, count(description) as count FROM outflow " \
+            "WHERE owner_id = :owner_id AND date >= :date_in AND date <= :date_out " \
+            "GROUP BY description, owner_id " \
+            "ORDER BY count DESC"
+    list_outflows = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
+                                                                  "date_out": date_out})
+    '''
     # вариант без группировки и суммирования по аналогичным расходам за период
     result = dict()
     list_outflows = await database.fetch_all(outflows.select().where(
