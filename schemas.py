@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: int
     DATABASE_NAME: str
-
     SECRET_KEY: str
+    MY_INVITE: str
 
     class Config:
         env_file = ".env"
@@ -24,6 +24,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    invite: str
     is_active: bool = True
 
     class Config:

@@ -18,7 +18,7 @@ from passlib.context import CryptContext
 import crud
 import schemas
 
-from config import SECRET_KEY
+from config import SECRET_KEY, MY_INVITE
 
 
 ALGORITHM = "HS256"
@@ -103,7 +103,7 @@ def get_password_hash(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    #print(get_password_hash(plain_password))
+    print(get_password_hash(plain_password))
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -210,12 +210,19 @@ async def redirect_login():
     return RedirectResponse(url=f"/", status_code=303)
 
 
+@app.get("/")
+async def redirect_login():
+    return RedirectResponse(url=f"/ndex.html", status_code=303)
+
+
 @app.post("/register", response_model=schemas.User, tags=["Register"])
 async def create_user(user: schemas.UserCreate):
     db_user = await crud.get_user_by_email(email=user.email)
     hashed_password: str = get_password_hash(user.password)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
+    if user.invite != MY_INVITE:
+        raise HTTPException(status_code=400, detail="Invite is broken")
     return await crud.create_user(user=user, hashed_password=hashed_password)
 
 

@@ -6,3 +6,7 @@ databases
 uvicorn
 pytest
 requests
+openpyxl
+python-jose
+passlib
+python-multipart
