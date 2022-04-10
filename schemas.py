@@ -313,10 +313,16 @@ class ReportsBase(BaseModel):
     description: str
     sum: int
 
+class ReportsFlowBase(BaseModel):
+    date: datetime
+    description: str
+    sum: int
 
 class ReportsUser(BaseModel):
     assets: List[ReportsBase] = []
     liabilities: List[ReportsBase] = []
+    inflow_regular: List[ReportsFlowBase] = []
+    outflow_regular: List[ReportsFlowBase] = []
 
     class Config:
         orm_mode = True

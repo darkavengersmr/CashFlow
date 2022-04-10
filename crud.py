@@ -373,6 +373,18 @@ async def get_reports(user_id: int):
     out.update({"assets": assets_result})
     out.update({"liabilities": liabilities_result})
 
+    inflow_regular_result = dict()
+    query = "SELECT date, description, sum FROM inflow WHERE owner_id = :owner_id AND description IN " \
+            "(SELECT description FROM inflow_regular WHERE owner_id = :owner_id)"
+    inflow_regular_result = await database.fetch_all(query=query, values={"owner_id": user_id})
+    out.update({"inflow_regular": [dict(result) for result in inflow_regular_result]})
+
+    outflow_regular_result = dict()
+    query = "SELECT date, description, sum FROM outflow WHERE owner_id = :owner_id AND description IN " \
+            "(SELECT description FROM outflow_regular WHERE owner_id = :owner_id)"
+    outflow_regular_result = await database.fetch_all(query=query, values={"owner_id": user_id})
+    out.update({"outflow_regular": [dict(result) for result in outflow_regular_result]})
+
     return out
 
 
