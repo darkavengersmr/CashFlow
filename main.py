@@ -22,7 +22,7 @@ from config import SECRET_KEY, MY_INVITE
 
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+ACCESS_TOKEN_EXPIRE_MINUTES = 181 * 60 * 24
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -103,7 +103,7 @@ def get_password_hash(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    print(get_password_hash(plain_password))
+    #print(get_password_hash(plain_password))
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -212,7 +212,7 @@ async def redirect_login():
 
 @app.get("/")
 async def redirect_login():
-    return RedirectResponse(url=f"/ndex.html", status_code=303)
+    return RedirectResponse(url=f"/index.html", status_code=303)
 
 
 @app.post("/register", response_model=schemas.User, tags=["Register"])
