@@ -75,7 +75,7 @@ async def get_inflow_regular_user(user_id: int):
             "AND inflow_regular.owner_id = inflow_lastsum.owner_id " \
             "AND inflow_regular.description = inflow_lastsum.description " \
             "UNION SELECT description, sum, id, owner_id FROM inflow_regular WHERE description NOT IN (" \
-            "SELECT description FROM inflow WHERE owner_id = :owner_id)"
+            "SELECT description FROM inflow WHERE owner_id = :owner_id) AND owner_id = :owner_id"
 
     list_inflows_regular = await database.fetch_all(query=query, values={"owner_id": user_id})
     '''
@@ -165,7 +165,7 @@ async def get_outflow_regular_user(user_id: int):
             "AND outflow_regular.owner_id = outflow_lastsum.owner_id " \
             "AND outflow_regular.description = outflow_lastsum.description " \
             "UNION SELECT description, sum, id, owner_id FROM outflow_regular WHERE description NOT IN (" \
-            "SELECT description FROM outflow WHERE owner_id = :owner_id)"
+            "SELECT description FROM outflow WHERE owner_id = :owner_id) AND owner_id = :owner_id"
 
     list_outflows_regular = await database.fetch_all(query=query, values={"owner_id": user_id})
     '''
