@@ -327,14 +327,13 @@ class ReportsUser(BaseModel):
     class Config:
         orm_mode = True
 
-
 class Popular(BaseModel):
     description: str
     sum: int
 
-
 class MostPopular(BaseModel):
     most_popular: List[Popular] = []
+    autocomplete: List = []
 
     class Config:
         orm_mode = True

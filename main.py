@@ -206,6 +206,11 @@ async def redirect_preferences():
     return RedirectResponse(url=f"/", status_code=303)
 
 
+@app.get("/reports")
+async def redirect_preferences():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
 @app.get("/login")
 async def redirect_login():
     return RedirectResponse(url=f"/", status_code=303)
