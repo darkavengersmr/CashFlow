@@ -431,8 +431,10 @@ async def get_reports(user_id: int, current_user: schemas.User = Depends(get_cur
 async def get_export(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
     await crud.get_export(user_id=user_id)
+    this_month = str(datetime.now())
+    filename = f'cashflow{this_month[:10]}.xlsx'
     return FileResponse(path='.' + os.sep + 'static' + os.sep + 'export' + os.sep + f'cashflow{user_id}.xlsx',
-                        filename=f'cashflow{user_id}.xlsx',
+                        filename=filename,
                         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
