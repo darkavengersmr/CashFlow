@@ -684,15 +684,10 @@ async def get_most_popular(user_id: int, date_in: datetime, date_out: datetime):
 
     list_most_popular = await database.fetch_all(query=query, values={"owner_id": user_id, "date_in": date_in,
                                                                       "date_out": date_out})
-
     result.update({"most_popular": [dict(result) for result in list_most_popular]})
 
-    query = "SELECT DISTINCT description FROM inflow WHERE owner_id = :owner_id UNION " \
-            "SELECT DISTINCT description FROM outflow WHERE owner_id = :owner_id"
-
+    query = "SELECT DISTINCT description FROM outflow WHERE owner_id = :owner_id"
     list_autocomplete = await database.fetch_all(query=query, values={"owner_id": user_id})
-
     result.update({"autocomplete": list_autocomplete})
-
 
     return result
