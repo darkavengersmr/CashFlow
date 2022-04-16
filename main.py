@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os
 import uvicorn
 
 from datetime import datetime, timedelta
@@ -430,7 +431,8 @@ async def get_reports(user_id: int, current_user: schemas.User = Depends(get_cur
 async def get_export(user_id: int, current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
     await crud.get_export(user_id=user_id)
-    return FileResponse(path=f'.\\static\\export\\cashflow{user_id}.xlsx', filename=f'cashflow{user_id}.xlsx',
+    return FileResponse(path='.' + os.sep + 'static' + os.sep + 'export' + os.sep + f'cashflow{user_id}.xlsx',
+                        filename=f'cashflow{user_id}.xlsx',
                         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 
 from database import database
@@ -389,7 +390,7 @@ async def get_reports(user_id: int):
 
 
 async def get_export(user_id: int):
-    wb = load_workbook('.\\static\\export\\template.xlsx')
+    wb = load_workbook('.' + os.sep + 'static' + os.sep + 'export' + os.sep + 'template.xlsx')
     bold = Font(bold=True)
 
     this_month_end = datetime.now()
@@ -668,7 +669,7 @@ async def get_export(user_id: int):
                     cell.value = 0
                 column += 1
 
-    wb.save(f'.\\static\\export\\cashflow{user_id}.xlsx')
+    wb.save('.' + os.sep + 'static' + os.sep + 'export' + os.sep + f'cashflow{user_id}.xlsx')
 
 
 async def get_most_popular(user_id: int, date_in: datetime, date_out: datetime):
