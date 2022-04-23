@@ -9,6 +9,7 @@ POSTGRES_HOST = config('POSTGRES_HOST')
 POSTGRES_PORT = config('POSTGRES_PORT', cast=int)
 DATABASE_NAME = config('DATABASE_NAME')
 MY_INVITE = config('MY_INVITE')
+DEMO_USER_ID = config('DEMO_USER_ID', cast=int)
 
 # to get a string like this run:
 # openssl rand -hex 32

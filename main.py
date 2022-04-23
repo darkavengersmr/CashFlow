@@ -19,7 +19,7 @@ from passlib.context import CryptContext
 import crud
 import schemas
 
-from config import SECRET_KEY, MY_INVITE
+from config import SECRET_KEY, MY_INVITE, DEMO_USER_ID
 
 
 ALGORITHM = "HS256"
@@ -265,6 +265,8 @@ async def get_inflow_for_user(user_id: int, date_in: Optional[datetime] = month_
 async def create_inflow_for_user(user_id: int, inflow: schemas.InflowCreate,
                                  current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.InflowInDB(**inflow.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_inflow(inflow=inflow, user_id=user_id)
 
 
@@ -272,6 +274,8 @@ async def create_inflow_for_user(user_id: int, inflow: schemas.InflowCreate,
 async def delete_inflow_for_user(user_id: int, inflow_id: int,
                                  current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "inflow for demo user conditionally deleted"}
     return await crud.delete_inflow_user(inflow_id=inflow_id, user_id=user_id)
 
 
@@ -285,6 +289,8 @@ async def get_inflow_regular_for_user(user_id: int, current_user: schemas.User =
 async def create_inflow_regular_for_user(user_id: int, inflow_regular: schemas.InflowRegularCreate,
                                          current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.InflowRegularInDB(**inflow_regular.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_inflow_regular(inflow_regular=inflow_regular, user_id=user_id)
 
 
@@ -292,6 +298,8 @@ async def create_inflow_regular_for_user(user_id: int, inflow_regular: schemas.I
 async def update_inflow_regular_for_user(user_id: int, inflow_regular: schemas.InflowRegularOut,
                                          current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "inflow regular updated"}
     return await crud.update_user_inflow_regular(inflow_regular=inflow_regular, user_id=user_id)
 
 
@@ -299,6 +307,8 @@ async def update_inflow_regular_for_user(user_id: int, inflow_regular: schemas.I
 async def delete_inflow_regular_for_user(user_id: int, inflow_regular_id: int,
                                          current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "inflow regular for demo user conditionally deleted"}
     return await crud.delete_inflow_regular_user(inflow_regular_id=inflow_regular_id, user_id=user_id)
 
 
@@ -313,6 +323,8 @@ async def get_outflow_for_user(user_id: int, date_in: datetime = month_begin(), 
 async def create_outflow_for_user(user_id: int, outflow: schemas.OutflowCreate,
                                   current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.OutflowInDB(**outflow.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_outflow(outflow=outflow, user_id=user_id)
 
 
@@ -320,6 +332,8 @@ async def create_outflow_for_user(user_id: int, outflow: schemas.OutflowCreate,
 async def delete_outflow_for_user(user_id: int, outflow_id: int,
                                   current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "outflow for demo user conditionally deleted"}
     return await crud.delete_outflow_user(outflow_id=outflow_id, user_id=user_id)
 
 
@@ -333,6 +347,8 @@ async def get_outflow_regular_for_user(user_id: int, current_user: schemas.User 
 async def create_outflow_regular_for_user(user_id: int, outflow_regular: schemas.OutflowRegularCreate,
                                   current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.OutflowRegularInDB(**outflow_regular.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_outflow_regular(outflow_regular=outflow_regular, user_id=user_id)
 
 
@@ -340,6 +356,8 @@ async def create_outflow_regular_for_user(user_id: int, outflow_regular: schemas
 async def update_outflow_regular_for_user(user_id: int, outflow_regular: schemas.OutflowRegularOut,
                                           current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "outflow regular updated"}
     return await crud.update_user_outflow_regular(outflow_regular=outflow_regular, user_id=user_id)
 
 
@@ -347,6 +365,8 @@ async def update_outflow_regular_for_user(user_id: int, outflow_regular: schemas
 async def delete_outflow_regular_for_user(user_id: int, outflow_regular_id: int,
                                           current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "outflow regular for demo user conditionally deleted"}
     return await crud.delete_outflow_regular_user(outflow_regular_id=outflow_regular_id, user_id=user_id)
 
 
@@ -354,6 +374,8 @@ async def delete_outflow_regular_for_user(user_id: int, outflow_regular_id: int,
 async def create_asset_for_user(user_id: int, asset: schemas.AssetCreate,
                                 current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.AssetInDB(**asset.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_asset(asset=asset, user_id=user_id)
 
 
@@ -368,6 +390,8 @@ async def get_assets_for_user(user_id: int, date: datetime = datetime.now(),
 async def update_asset_for_user(user_id: int, asset: schemas.AssetOut,
                                 current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "asset updated"}
     return await crud.update_user_asset(asset=asset, user_id=user_id)
 
 
@@ -375,6 +399,8 @@ async def update_asset_for_user(user_id: int, asset: schemas.AssetOut,
 async def delete_asset_for_user(user_id: int, asset: schemas.AssetDelete,
                                 current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "asset for demo user conditionally deleted"}
     return await crud.update_user_asset(asset=asset, user_id=user_id)
 
 
@@ -382,6 +408,8 @@ async def delete_asset_for_user(user_id: int, asset: schemas.AssetDelete,
 async def create_liabilitie_for_user(user_id: int, liabilitie: schemas.LiabilitieCreate,
                                      current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.LiabilitieInDB(**liabilitie.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_liabilitie(liabilitie=liabilitie, user_id=user_id)
 
 
@@ -396,6 +424,8 @@ async def get_liabilities_for_user(user_id: int, date: datetime = datetime.now()
 async def update_liabilitie_for_user(user_id: int, liabilitie: schemas.LiabilitieOut,
                                      current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "liabilities regular updated"}
     return await crud.update_user_liabilitie(liabilitie=liabilitie, user_id=user_id)
 
 
@@ -403,6 +433,8 @@ async def update_liabilitie_for_user(user_id: int, liabilitie: schemas.Liabiliti
 async def delete_liabilitie_for_user(user_id: int, liabilitie: schemas.LiabilitieDelete,
                                      current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "liabilitie for demo user conditionally deleted"}
     return await crud.update_user_liabilitie(liabilitie=liabilitie, user_id=user_id)
 
 
@@ -416,6 +448,8 @@ async def get_categories_for_user(user_id: int, current_user: schemas.User = Dep
 async def create_category_for_user(user_id: int, category: schemas.CategoryCreate,
                                    current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return schemas.CategoryInDB(**category.dict(), id=9999999, owner_id=DEMO_USER_ID)
     return await crud.create_user_category(category=category, user_id=user_id)
 
 
@@ -423,6 +457,8 @@ async def create_category_for_user(user_id: int, category: schemas.CategoryCreat
 async def delete_category_for_user(user_id: int, category_id: int,
                                    current_user: schemas.User = Depends(get_current_active_user)):
     await is_user(user_id, current_user.email)
+    if (user_id == DEMO_USER_ID):
+        return {"result": "category for demo user conditionally deleted"}
     return await crud.delete_user_category(category_id=category_id, user_id=user_id)
 
 
