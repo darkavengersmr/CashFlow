@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import asyncio
 import uvicorn
 
 from datetime import datetime, timedelta
@@ -19,7 +20,7 @@ from passlib.context import CryptContext
 import crud
 import schemas
 
-from config import SECRET_KEY, MY_INVITE, DEMO_USER_ID
+from config import SECRET_KEY, MY_INVITE, DEMO_USER_ID, EXCEPTION_PER_SEC_LIMIT
 
 
 ALGORITHM = "HS256"
@@ -163,8 +164,10 @@ async def get_current_active_user(current_user: schemas.User = Depends(get_curre
 async def is_user(user_id: int, email: str):
     db_user = await crud.get_user(user_id=user_id)
     if db_user is None:
+        await asyncio.sleep(EXCEPTION_PER_SEC_LIMIT)
         raise HTTPException(status_code=404, detail="User not found")
     if db_user['email'] != email:
+        await asyncio.sleep(EXCEPTION_PER_SEC_LIMIT)
         raise HTTPException(status_code=404, detail="Query for other user prohibited")
     return db_user
 
@@ -216,6 +219,11 @@ async def redirect_login():
     return RedirectResponse(url=f"/", status_code=303)
 
 
+@app.get("/register")
+async def redirect_login():
+    return RedirectResponse(url=f"/", status_code=303)
+
+
 @app.get("/")
 async def redirect_login():
     return RedirectResponse(url=f"/index.html", status_code=303)
@@ -228,6 +236,7 @@ async def create_user(user: schemas.UserCreate):
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     if user.invite != MY_INVITE:
+        await asyncio.sleep(EXCEPTION_PER_SEC_LIMIT)
         raise HTTPException(status_code=400, detail="Invite is broken")
     return await crud.create_user(user=user, hashed_password=hashed_password)
 
@@ -236,6 +245,7 @@ async def create_user(user: schemas.UserCreate):
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
+        await asyncio.sleep(EXCEPTION_PER_SEC_LIMIT)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

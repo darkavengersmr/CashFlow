@@ -10,3 +10,4 @@ openpyxl
 python-jose
 passlib
 python-multipart
+asyncio
