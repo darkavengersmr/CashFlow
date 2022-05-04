@@ -57,7 +57,7 @@ class TokenData(BaseModel):
 
 
 class InflowBase(BaseModel):
-    date: datetime = Field(default_factory=datetime.now())
+    date: datetime = Field(default_factory=datetime.now)
     description: str = 'Прочие доходы'
     sum: int = 0
 
@@ -114,7 +114,7 @@ class InflowRegularUser(BaseModel):
 
 
 class OutflowBase(BaseModel):
-    date: datetime = Field(default_factory=datetime.now())
+    date: datetime = Field(default_factory=datetime.now)
     description: str = 'Прочие расходы'
     sum: int = 0
 
@@ -177,10 +177,10 @@ class OutflowRegularUser(BaseModel):
 
 
 class AssetBase(BaseModel):
-    date_in: datetime = Field(default_factory=datetime.strptime(f"{datetime.now().timetuple().tm_year}"
-                                                                f"-{datetime.now().timetuple().tm_mon}-"
-                                                                f"01 00:00:00", "%Y-%m-%d %H:%M:%S"))
-    date_out: datetime = Field(default_factory=datetime.now() + timedelta(days=100000))
+    date_in: datetime = Field(default_factory=lambda: datetime.strptime(f"{datetime.now().timetuple().tm_year}"
+                                                                        f"-{datetime.now().timetuple().tm_mon}-"
+                                                                        f"01 00:00:00", "%Y-%m-%d %H:%M:%S"))
+    date_out: datetime = Field(default_factory=lambda: datetime.now() + timedelta(days=100000))
     description: str = 'Прочие активы'
     sum: int = 0
     category_id: Union[int, None]
@@ -211,7 +211,7 @@ class AssetOut(BaseModel):
 
 class AssetDelete(BaseModel):
     id: int
-    date: datetime = Field(default_factory=datetime.now())
+    date: datetime = Field(default_factory=datetime.now)
 
     class Config:
         orm_mode = True
@@ -225,10 +225,10 @@ class AssetUser(BaseModel):
 
 
 class LiabilitieBase(BaseModel):
-    date_in: datetime = Field(default_factory=datetime.strptime(f"{datetime.now().timetuple().tm_year}"
-                                                                f"-{datetime.now().timetuple().tm_mon}-"
-                                                                f"01 00:00:00", "%Y-%m-%d %H:%M:%S"))
-    date_out: datetime = Field(default_factory=datetime.now() + timedelta(days=100000))
+    date_in: datetime = Field(default_factory=lambda: datetime.strptime(f"{datetime.now().timetuple().tm_year}"
+                                                                        f"-{datetime.now().timetuple().tm_mon}-"
+                                                                        f"01 00:00:00", "%Y-%m-%d %H:%M:%S"))
+    date_out: datetime = Field(default_factory=lambda: datetime.now() + timedelta(days=100000))
     description: str = 'Прочие пассивы'
     sum: int = 0
     category_id: Union[int, None] = None
@@ -259,7 +259,7 @@ class LiabilitieOut(BaseModel):
 
 class LiabilitieDelete(BaseModel):
     id: int
-    date: datetime = Field(default_factory=datetime.now())
+    date: datetime = Field(default_factory=datetime.now)
 
     class Config:
         orm_mode = True
